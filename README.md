@@ -1,90 +1,113 @@
-# Alienware Aurora ACT1250 — macOS, RTX 5070 and UEFI Secure Boot
+# Alienware Aurora ACT1250: macOS, RTX 5070 and UEFI Secure Boot
 
-这是一份单机实测记录：Dell Alienware Aurora ACT1250 在 **UEFI Secure Boot 开启、两只测试 U 盘均拔掉**的状态下，从内部 SSD 进入 macOS Tahoe。记录包括签名启动链、两个实际遇到的 PE/COFF 验证问题，以及重新执行的 Wi-Fi、Metal 计算和离屏渲染测试。
+A hardware-tested record of macOS Tahoe running on an Alienware Aurora ACT1250 with **firmware Secure Boot enabled and both test USB drives disconnected**. The machine booted from its internal SSD. This repository explains the complete trust chain, the two verification failures encountered along the way, and the Wi-Fi and Metal tests performed afterward.
 
-**English:** A hardware-tested case study of macOS Tahoe on an Alienware Aurora ACT1250 with firmware Secure Boot enabled, internal-SSD boot, an RTX 5070 and an Intel wireless adapter. This documents owner-authorized shim/MOK trust, PE/COFF interoperability debugging and the functional tests performed on this machine.
+Recorded November 9, 2026, Pacific time. Firmware logs used a different time zone, so some original log filenames carry the following day's date.
 
-记录日期：2026-11-09，美国西海岸时间。固件日志采用不同的时区，部分原始日志日期为次日。
+## Hardware and software
 
-## 实测配置
-
-| 项目 | 本机情况 |
+| Component | Tested configuration |
 |---|---|
-| 机器 | Dell Alienware Aurora ACT1250 |
-| CPU | Intel Core Ultra 7 265F，无可用核显 |
-| 显卡 | NVIDIA GeForce RTX 5070，12 GB，PCI device `2f04` |
-| 内存 | 32 GB |
-| macOS SSD | Samsung 990 PRO 1 TB |
-| Windows SSD | SanDisk PC SN7100S，独立系统盘 |
-| 系统 | macOS Tahoe 26.7.2，build `25G332` |
-| SMBIOS 类型 | MacPro7,1；序列号等身份信息不公开 |
-| 实际 OpenCore 二进制 | 自定义 `DBG-109-2026-10-31`；不是声称使用原版 1.0.8 |
-| 配置校验及离线源码参考 | 官方 OpenCore 1.0.8；与上述自定义二进制存在版本边界 |
-| 菜单 | rEFInd 0.14.2，macOS / Windows 两个手动入口 |
-| shim | Ubuntu `shim-signed 1.59+15.8-0ubuntu2`，Microsoft 签名 |
-| 显卡驱动 | NullMoth 2.7.2 |
-| Wi-Fi | Intel `8086:272b`，subsystem `8086:40f0`，属于 BE200/BE202/Killer GL 系列 PCI ID |
-| Wi-Fi 驱动运行时标识 | `AirportItlwm 2.4.0`；firmware 字符串 `2.4.0_FIX29_20261101` / `92.67ce4588.0` |
+| Computer | Dell Alienware Aurora ACT1250 |
+| CPU | Intel Core Ultra 7 265F; no usable integrated graphics |
+| GPU | NVIDIA GeForce RTX 5070, 12 GB, PCI device `2f04` |
+| Memory | 32 GB |
+| macOS storage | Samsung 990 PRO 1 TB |
+| Windows storage | Separate SanDisk PC SN7100S SSD |
+| macOS | Tahoe 26.7.2, build `25G332` |
+| SMBIOS model | MacPro7,1; machine identity values are excluded |
+| Running OpenCore binary | Custom `DBG-109-2026-10-31` |
+| Offline source reference | Official OpenCore 1.0.8; the custom running binary has a separate version boundary |
+| Graphical menu | rEFInd 0.14.2, manual macOS and Windows entries |
+| First-stage loader | Microsoft-signed Ubuntu shim, package `shim-signed 1.59+15.8-0ubuntu2` |
+| GPU driver | NullMoth 2.7.2 |
+| Wireless PCI IDs | `8086:272b`, subsystem `8086:40f0` |
+| Loaded wireless driver | AirportItlwm 2.4.0 |
+| Wireless firmware report | `itlwm: 2.4.0_FIX29_20261101 fw: 92.67ce4588.0` |
 
-Wi-Fi 的 PCI ID 不是零售型号的唯一依据。公开的 [Ersiter/AirportItlwm-BE200](https://github.com/Ersiter/AirportItlwm-BE200) 包含该系列及 FIX29 相关开发记录，但本记录没有完成已装二进制与该仓库某个发布资产的逐字节来源核验。
+The wireless PCI ID belongs to the Intel BE200/BE202/Killer GL family supported by [Ersiter/AirportItlwm-BE200](https://github.com/Ersiter/AirportItlwm-BE200). A shared PCI ID alone does not establish an exact retail card model. The installed binary's runtime version is recorded here; its byte-for-byte provenance against a particular upstream release asset has not been established.
 
-## 哪些结果已经验证
+## Verified results
 
-| 项目 | 结果和证据边界 |
+| Check | Observed result |
 |---|---|
-| 真正的 UEFI Secure Boot | 进入桌面后读取到 `SecureBoot=1`、`SetupMode=0`、`AuditMode=0`、`DeployedMode=1` |
-| 脱离 U 盘启动 | 两只测试 U 盘均未连接；启动路径指向内部 Samsung SSD 的 OpenCore；用户确认进入桌面 |
-| shim 的信任校验 | 使用自有 MOK 签名及特定 booter 哈希；未设置禁用 shim 验证的 `MokSBStateRT` |
-| Wi-Fi 真正联网 | HTTPS 请求强制绑定 Wi-Fi 接口，禁用代理，3/3 返回 HTTP 200，TLS 校验通过，连接源地址与 Wi-Fi 一致 |
-| GPU 计算 | Metal 全数组计算 4096 个结果，0 个错误 |
-| GPU 渲染 | Metal 离屏绘制 64×64 全屏三角形，CPU 回读全部 4096 个像素，容差 1/255，0 个错误 |
-| GPU 小型算术测试 | float4 FMA 约 11.698 TFLOP/s，三个抽样结果校验通过；只是这一段测试的运算量估计 |
+| Firmware state after reaching macOS | `SecureBoot=1`, `SetupMode=0`, `AuditMode=0`, `DeployedMode=1` |
+| Internal-storage boot | Both test USB drives disconnected; boot path on the internal Samsung SSD; desktop confirmed |
+| Owner-authorized trust | MOK signatures and an exact processed-booter hash; no `MokSBStateRT` disabling shim validation |
+| Actual Wi-Fi traffic | Three HTTPS requests bound to the Wi-Fi interface, proxy bypassed, HTTP 200, valid TLS, source address matched Wi-Fi |
+| Metal compute correctness | All 4,096 output elements checked; zero mismatches |
+| Metal rendering correctness | A 64×64 fullscreen triangle rendered offscreen; all 4,096 pixels read back and checked; zero mismatches at 1/255 tolerance |
+| Arithmetic microbenchmark | Approximately 11.698 TFLOP/s for the specific float4 FMA workload; three numerical samples passed |
 
-可读的结构化结果放在 [VALIDATION.json](VALIDATION.json)。[metal_functional_test.py](metal_functional_test.py) 可在 macOS 上用 Python 3 重新执行，不需要第三方 Python 包：
+The microbenchmark is a workload-specific arithmetic estimate, not a gaming benchmark or a Windows performance comparison. The rendering check covers offscreen drawing and readback.
+
+See [VALIDATION.json](VALIDATION.json) for the sanitized results. To repeat the small functional checks on macOS with Python 3:
 
 ```sh
 python3 metal_functional_test.py
 ```
 
-该脚本只检查小规模计算和离屏渲染，不测窗口交换链、游戏帧率、专业软件兼容性或长时间稳定性。
-
-## 启动方法
-
-本机验证通过的链路：
+## Secure Boot: the complete walkthrough
 
 ```text
-Dell UEFI，Secure Boot ON，保留出厂平台密钥
-  → Microsoft 签名的 Ubuntu shim
-  → 自有 MOK 签名的 rEFInd
-  → 自有 MOK 签名的 OpenCore
-  → 原 APFS/Preboot 路径中的 Apple boot.efi
-     （OpenCore 预处理后的映像，按精确 MOK 哈希信任）
-  → macOS
+Dell UEFI with Secure Boot ON and factory platform keys retained
+  -> Microsoft-signed Ubuntu shim
+  -> rEFInd signed by the machine owner's MOK
+  -> OpenCore signed by the same owner
+  -> original Apple boot.efi from its APFS/Preboot path
+     (the processed image is trusted by an exact enrolled MOK hash)
+  -> macOS
 ```
 
-完整步骤、文件布局、证书登记、哈希登记和失败排查见 [SECURE_BOOT.md](SECURE_BOOT.md)。其中有两个容易漏掉的细节：
+Read [SECURE_BOOT.md](SECURE_BOOT.md) for:
 
-1. 部分 HFS+/APFS EFI 驱动在常见签名工具中验证成功，但与 shim 15.8 的摘要不一致。本次为原始文件中的空隙补上不执行的 PE 节，再重新签名，实际启动通过。
-2. OpenCore 会预处理 Apple EFI 映像。因此，直接把磁盘上原始 `boot.efi` 的哈希登记进 MOK，可能无法匹配随后被验证的内存映像。本次登记的是经过验证、按相同规则生成的副本哈希；正常启动仍读取原始 APFS 文件。
+1. Dell's ACT1250 firmware restriction and why this setup uses MOK instead of replacing platform keys.
+2. A stage-by-stage trust explanation and a precise USB directory layout.
+3. Owner-key creation, signing commands, certificate inspection and MokManager enrollment.
+4. Reproduction of the HFS+/APFS PE-layout digest mismatch, with before/after evidence.
+5. A non-executable metadata-section repair, invariants and offline verification tools.
+6. Verification of the original Apple signature and reproduction of the booter preprocessing.
+7. The exact difference between enrolling a certificate and enrolling a processed-image hash.
+8. Internal-SSD migration, boot-path verification and targeted troubleshooting.
 
-## 显卡和 Wi-Fi
+Two details made the difference on this machine:
 
-显卡依赖现有的 [NullMoth NVIDIA macOS driver](https://github.com/nullmoth/nvidia-macos-driver) 和其驱动安装工具 [1401](https://github.com/nullmoth/1401)。本机加载了 `NVRM`、`NVRMFB`、`NVAccel`、`NVRMAGDC` 2.7.2；NVMTL 报告的设备是 RTX 5070 / NVK GB205-A。本记录新增的是这台机器上的验证结果，显卡驱动来自上述项目。
+- A conventional Authenticode verifier accepted two filesystem drivers, but shim 15.8 calculated a different digest because of their raw-file gaps. Adding non-executable metadata sections for those existing bytes and signing the resulting copies resolved the mismatch.
+- OpenCore preprocesses Apple EFI images. The exact image seen by the verifier can therefore differ from the file stored on disk. Enrolling a hash of a verified, deterministically processed copy allowed the original APFS booter to load through the normal path.
 
-本机保留驱动要求的 `SecureBootModel=Disabled`、AMFI/SIP 相关配置。这里的 **Apple SecureBootModel 与主板 UEFI Secure Boot 是两回事**。主板显示 Secure Boot 开启，并不代表该 macOS 获得了原生 Mac 的完整安全策略。
+Tools included in this repository:
 
-光标使用 `nvcursor=0` 作为当前机器的实际配置。是否需要这个选项应按具体故障判断，不把它当作所有显卡的通用要求。
+| File | Purpose |
+|---|---|
+| [pe_tools.py](pe_tools.py) | Inspect restricted x86_64 PE32+ layouts, calculate the shim 15.8 digest, normalize eligible raw gaps, and compare with a verified Authenticode digest |
+| [prepare_boot_hash.py](prepare_boot_hash.py) | Verify and prepare an enrollment-only copy of the exact tested `25G332` Apple booter |
+| [metal_functional_test.py](metal_functional_test.py) | Small Metal compute and offscreen-rendering correctness checks |
+| [PE_VALIDATION.json](PE_VALIDATION.json) | Sanitized before/after driver evidence and tool cross-check results |
 
-Wi-Fi 当前系统报告支持 `802.11 a/b/g/n/ac`，基本连接和实际传输已通过。本机的 PHY 报告与实际配置未开启 `itlwm_he=1` 一致。
+The offline tools write new working files. Firmware trust enrollment remains a separate, deliberate operation in MokManager.
 
-## USB 接口说明
+## GPU and Wi-Fi
 
-**USB 映射仍有部分接口不可用。** 后方一组非 USB 2.0 的 USB-A 接口，当前连键盘、鼠标也无法使用，仍需重新完成逐口映射。其他接口的工作情况应以实际逐口测试为准。
+GPU support comes from the existing [NullMoth NVIDIA macOS driver](https://github.com/nullmoth/nvidia-macos-driver), installed using its associated [1401 project](https://github.com/nullmoth/1401). This machine loaded `NVRM`, `NVRMFB`, `NVAccel` and `NVRMAGDC` 2.7.2. NVMTL identified the RTX 5070 through NVK GB205-A. The new contribution here is the machine-specific integration and validation record.
 
-## 本次记录与已有方法的关系
+The macOS configuration retains the driver's required Apple `SecureBootModel=Disabled` and AMFI/SIP-related settings. **Apple SecureBootModel and motherboard UEFI Secure Boot are different mechanisms.** The firmware flags above describe the latter; they do not assert that this macOS installation has the security policy of a native Mac.
 
-shim/MOK、自签名 rEFInd、OpenCore 的 Apple EFI 预处理以及这些第三方驱动都有公开实现。本次检索没有找到这台 ACT1250、这组组件版本和这两处失败原因的完整同配置实测记录；这不构成“全球首发”或“GitHub 从未有人做过”的证明。
+The working local configuration also uses `nvcursor=0`. Current Wi-Fi reporting lists `802.11 a/b/g/n/ac`; the actual bound HTTPS tests confirmed connectivity. This record reports those observed modes rather than inferring higher wireless modes from the adapter's product family.
 
-值得保留的是：实际从 U 盘到硬盘的验证过程、两种独立摘要实现与实际固件结果的交叉核对、以及有明确边界的 Wi-Fi / Metal 功能测试。相关来源及排错细节集中在 [SECURE_BOOT.md](SECURE_BOOT.md)。
+## USB mapping note
 
-本仓库仅发布技术说明、经裁剪的测试结果和小型测试脚本。EFI 二进制、Apple 系统文件、完整机器配置、MOK 私钥/证书、设备身份和原始网络日志均留在本地。
+**Some rear USB-A ports remain unusable under the current USB map, including with a keyboard or mouse.** The affected group still needs a complete physical-port and USB2/USB3 companion mapping pass.
+
+## Attribution and contribution
+
+shim/MOK, signed rEFInd, OpenCore's Apple-image processing, and both driver projects are existing public work. The searches performed for this record did not locate a complete report of this exact ACT1250/component combination and both failure diagnoses. That is not evidence of global priority.
+
+This record contributes a tested USB-to-internal-SSD procedure, a reproducible investigation of the two verification failures, and fresh Wi-Fi and Metal correctness results. Upstream references are linked in the walkthrough.
+
+### With help from ChatGPT
+
+Created with help from **ChatGPT**. With appreciation for the assistance with research, debugging, test design, verification and documentation throughout this project. Credit for the bootloaders, drivers and underlying implementations belongs to their respective authors and maintainers.
+
+## Publication privacy
+
+The public files contain hardware models, component versions, technical methods and sanitized test results. Private signing material, personal certificates, hardware serials, machine UUIDs, MAC/IP addresses, network names, personal email addresses, local home-directory paths and raw system/network logs are excluded. GitHub still identifies this repository through its owner's existing public account.

@@ -1,0 +1,164 @@
+{
+  "shimAlgorithmSource": "https://github.com/rhboot/shim/blob/15.8/pe.c#L44",
+  "reproducedTwoOriginalFailures": true,
+  "repairedFiles": [
+    {
+      "file": "02_HfsPlus.efi",
+      "before": {
+        "signedDigest": "a66f6b2976b8d7fc9dfe6661549d2a1b64c6ae07f3f5bdd4022a157fea5b9f5c",
+        "shimDigest": "31ad639e10301d9baee5d01cfd2c85f64dce090d0193a3e3dbab9b053d867075",
+        "matches": false,
+        "gapBytes": 512
+      },
+      "after": {
+        "signedDigest": "c31ed4596b876c9d76f7b2c82932e524355435a2655c458cb6aa8c7c065e3f0f",
+        "shimDigest": "c31ed4596b876c9d76f7b2c82932e524355435a2655c458cb6aa8c7c065e3f0f",
+        "matches": true,
+        "gapBytes": 0
+      },
+      "coveredRawGaps": [
+        {
+          "offset": 37888,
+          "size": 512
+        }
+      ],
+      "oldSectionsFullyUnchanged": true,
+      "newMetadataSectionsNonExecutable": true,
+      "beforeFileSHA256": "3bea6e11bb849e52b2ee7e22bfc8fd4db6adc28cd2f55b0ffc676dc505d2b90b",
+      "afterFileSHA256": "b143635e84555b7a20569264c1bed52268250e889321b5a55572529d35576768"
+    },
+    {
+      "file": "03_apfs_aligned.efi",
+      "before": {
+        "signedDigest": "aaeb3f9582a2ad347af7cc6a9d322ab35fbfc1ae925bc018f338f5e16a1a10ae",
+        "shimDigest": "586222ad759f7da6bee189b39e9d260ac3e0b6509b7dcffef60af69c426439e3",
+        "matches": false,
+        "gapBytes": 4608
+      },
+      "after": {
+        "signedDigest": "328b5ba108280e66f8e82825ab7657fb627f86603f4afbee4006f407df92da70",
+        "shimDigest": "328b5ba108280e66f8e82825ab7657fb627f86603f4afbee4006f407df92da70",
+        "matches": true,
+        "gapBytes": 0
+      },
+      "coveredRawGaps": [
+        {
+          "offset": 712704,
+          "size": 4096
+        },
+        {
+          "offset": 718336,
+          "size": 512
+        }
+      ],
+      "oldSectionsFullyUnchanged": true,
+      "newMetadataSectionsNonExecutable": true,
+      "beforeFileSHA256": "e8b344ce7e84f0b329145c259a6083ba2bf62c51f14878c32f4113f7517dcb11",
+      "afterFileSHA256": "1579ad7255ba2f7c9731b1a22771f6f90b51af6bd1c52d52f6864be8571efb99"
+    }
+  ],
+  "passingControls": [
+    {
+      "file": "01_OpenRuntime.efi",
+      "signedDigest": "f0f5c49b9151d4a41c8bddb6140ef1874db26cc7e70fe9433c430975e7becac8",
+      "shimDigest": "f0f5c49b9151d4a41c8bddb6140ef1874db26cc7e70fe9433c430975e7becac8",
+      "matches": true,
+      "gapBytes": 0
+    },
+    {
+      "file": "grubx64.efi",
+      "signedDigest": "9dee95b4984a0e4db8dfecb9102e4e3356380f072ec8c2cfc62f8127a6a531e9",
+      "shimDigest": "9dee95b4984a0e4db8dfecb9102e4e3356380f072ec8c2cfc62f8127a6a531e9",
+      "matches": true,
+      "gapBytes": 0
+    },
+    {
+      "file": "OpenCore.efi",
+      "signedDigest": "d52906d103f3d6df0c521394611352cb449644f3c4e9273ea99a17b74a15be1e",
+      "shimDigest": "d52906d103f3d6df0c521394611352cb449644f3c4e9273ea99a17b74a15be1e",
+      "matches": true,
+      "gapBytes": 0
+    }
+  ],
+  "sameExistingCertificate": true,
+  "privateKeyOnUSB": false,
+  "hardwareValidation": "Repaired payloads subsequently passed the actual USB and internal-SSD Secure Boot tests.",
+  "publishedToolChecks": [
+    {
+      "file": "02_HfsPlus.efi",
+      "normalizerMatchesHardwareTestedWorkingCopy": true,
+      "gaps": [
+        {
+          "offset": 37888,
+          "size": 512
+        }
+      ]
+    },
+    {
+      "file": "03_apfs_aligned.efi",
+      "normalizerMatchesHardwareTestedWorkingCopy": true,
+      "gaps": [
+        {
+          "offset": 712704,
+          "size": 4096
+        },
+        {
+          "offset": 718336,
+          "size": 512
+        }
+      ]
+    },
+    {
+      "file": "02_HfsPlus.efi",
+      "pythonMatchesOriginalShimC": true,
+      "shim15_8SHA256": "31ad639e10301d9baee5d01cfd2c85f64dce090d0193a3e3dbab9b053d867075"
+    },
+    {
+      "file": "03_apfs_aligned.efi",
+      "pythonMatchesOriginalShimC": true,
+      "shim15_8SHA256": "586222ad759f7da6bee189b39e9d260ac3e0b6509b7dcffef60af69c426439e3"
+    },
+    {
+      "file": "02_HfsPlus.efi",
+      "pythonMatchesOriginalShimC": true,
+      "shim15_8SHA256": "c31ed4596b876c9d76f7b2c82932e524355435a2655c458cb6aa8c7c065e3f0f"
+    },
+    {
+      "file": "03_apfs_aligned.efi",
+      "pythonMatchesOriginalShimC": true,
+      "shim15_8SHA256": "328b5ba108280e66f8e82825ab7657fb627f86603f4afbee4006f407df92da70"
+    },
+    {
+      "file": "01_OpenRuntime.efi",
+      "pythonMatchesOriginalShimC": true,
+      "shim15_8SHA256": "f0f5c49b9151d4a41c8bddb6140ef1874db26cc7e70fe9433c430975e7becac8"
+    },
+    {
+      "file": "grubx64.efi",
+      "pythonMatchesOriginalShimC": true,
+      "shim15_8SHA256": "9dee95b4984a0e4db8dfecb9102e4e3356380f072ec8c2cfc62f8127a6a531e9"
+    },
+    {
+      "file": "OpenCore.efi",
+      "pythonMatchesOriginalShimC": true,
+      "shim15_8SHA256": "d52906d103f3d6df0c521394611352cb449644f3c4e9273ea99a17b74a15be1e"
+    },
+    {
+      "file": "MOK-boot-26.7.2.efi",
+      "pythonMatchesOriginalShimC": true,
+      "shim15_8SHA256": "2e868710c257f7486250b7260285a03208e665d7e5ed59483d7db346a6eebfa0"
+    },
+    {
+      "negativeCase": "truncated",
+      "rejected": true
+    },
+    {
+      "negativeCase": "signedInput",
+      "rejected": true
+    },
+    {
+      "negativeCase": "unknownOverlay",
+      "rejected": true
+    }
+  ]
+}
