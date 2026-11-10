@@ -1,0 +1,114 @@
+{
+  "recordDate": "2026-11-09",
+  "timeZone": "America/Los_Angeles",
+  "machine": "Alienware Aurora ACT1250",
+  "macOS": {
+    "version": "26.7.2",
+    "build": "25G332"
+  },
+  "verifiedBoot": {
+    "route": "rEFInd preloaded drivers -> signed OpenCore -> original APFS booter",
+    "storage": "internal Samsung SSD; both test USB storage devices disconnected",
+    "secureBoot": 1,
+    "setupMode": 0,
+    "auditMode": 0,
+    "deployedMode": 1,
+    "MokSBStateRT": "not present",
+    "userConfirmedDesktop": true
+  },
+  "wifi": {
+    "pciVendor": "8086",
+    "pciDevice": "272b",
+    "subsystemVendor": "8086",
+    "subsystemDevice": "40f0",
+    "kext": "com.zxystd.AirportItlwm",
+    "version": "2.4.0",
+    "reportedFirmware": "itlwm: 2.4.0_FIX29_20261101 fw: 92.67ce4588.0",
+    "reportedPHYModes": "802.11 a/b/g/n/ac",
+    "interface": "en1",
+    "interfaceRole": "Wi-Fi (AirPort)",
+    "linkActive": true,
+    "addressAssigned": true,
+    "boundHTTPSProbes": [
+      {
+        "url": "https://www.apple.com/library/test/success.html",
+        "exit": 0,
+        "httpStatus": 200,
+        "downloadedBytes": 68,
+        "seconds": 0.100047,
+        "tlsVerifyResult": 0,
+        "localIPMatchesWifi": true,
+        "error": ""
+      },
+      {
+        "url": "https://github.com/robots.txt",
+        "exit": 0,
+        "httpStatus": 200,
+        "downloadedBytes": 29821,
+        "seconds": 0.150631,
+        "tlsVerifyResult": 0,
+        "localIPMatchesWifi": true,
+        "error": ""
+      },
+      {
+        "url": "https://raw.githubusercontent.com/acidanthera/OpenCorePkg/master/Docs/Configuration.tex",
+        "exit": 0,
+        "httpStatus": 200,
+        "downloadedBytes": 481558,
+        "seconds": 0.249595,
+        "tlsVerifyResult": 0,
+        "localIPMatchesWifi": true,
+        "error": ""
+      }
+    ]
+  },
+  "gpu": {
+    "version": "NullMoth 2.7.2",
+    "functional": {
+      "device": "NVIDIA GeForce RTX 5070 (NVMTL over NVIDIA GeForce RTX 5070 (NVK GB205-A))",
+      "compute": {
+        "validation": "passed",
+        "checkedElements": 4096,
+        "formula": "output[i] = 3 * i + 1",
+        "mismatches": 0
+      },
+      "offscreenRender": {
+        "validation": "passed",
+        "width": 64,
+        "height": 64,
+        "checkedPixels": 4096,
+        "format": "RGBA8Unorm",
+        "expectedRGBA": [
+          255,
+          64,
+          128,
+          255
+        ],
+        "firstPixelRGBA": [
+          255,
+          64,
+          127,
+          255
+        ],
+        "tolerancePerChannel": 1,
+        "mismatches": 0
+      }
+    },
+    "arithmeticMicrobenchmark": {
+      "device": "NVIDIA GeForce RTX 5070 (NVMTL over NVIDIA GeForce RTX 5070 (NVK GB205-A))",
+      "test": "Direct Metal float4 FMA",
+      "iterations": 10900,
+      "seconds": 2.0009766559999997,
+      "endToEndGFLOPS": 11698.073384820138,
+      "validation": "passed",
+      "samples": [
+        5.897511005401611,
+        10.160862922668457,
+        10.160862922668457
+      ]
+    }
+  },
+  "knownIssues": [
+    "Rear USB-A group reported unusable even with keyboard/mouse; physical mapping incomplete"
+  ]
+}
